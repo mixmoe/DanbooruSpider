@@ -1,5 +1,17 @@
 {
     "python.formatting.provider": "black",
     "python.linting.mypyEnabled": true,
-    "python.linting.flake8Enabled": true
+    "python.linting.flake8Enabled": true,
+    "python.linting.flake8Args": [
+        "--max-line-length 90"
+    ],
+    "cSpell.words": [
+        "Danbooru",
+        "Referer",
+        "aiofiles",
+        "aiter",
+        "asyncio",
+        "httpx",
+        "levelno"
+    ]
 }
