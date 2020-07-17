@@ -1,8 +1,7 @@
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 import confuse
-
 
 APPLICATION_NAME = "DanbooruSpider"
 CONFIG_DIR = Path(".") / "data"

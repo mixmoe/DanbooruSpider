@@ -1,14 +1,14 @@
 import asyncio
 from datetime import datetime
-from typing import Optional, Union, List, Dict, Any
-
 from pathlib import Path
-import aiofiles
-from httpx import AsyncClient, URL, HTTPError
+from typing import Any, Dict, List, Optional, Union
 
+import aiofiles
+from httpx import URL, AsyncClient, HTTPError
+
+from ..exceptions import NetworkException, SpiderException
 from ..log import logger
 from ..utils import TempFile
-from ..exceptions import SpiderException, NetworkException
 
 
 class SpiderWorker:

@@ -1,6 +1,3 @@
-from DanbooruSpider.log import LOGGER_FILE_DIR
-
-
 class DanbooruException(Exception):
     pass
 
