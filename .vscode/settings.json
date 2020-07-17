@@ -13,5 +13,11 @@
         "asyncio",
         "httpx",
         "levelno"
-    ]
+    ],
+    "[python]": {
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        }
+    },
+    "python.pythonPath": ".venv\\Scripts\\python.exe"
 }
