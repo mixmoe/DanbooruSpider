@@ -12,6 +12,7 @@
         "aiter",
         "asyncio",
         "httpx",
+        "iscoroutinefunction",
         "levelno"
     ],
     "[python]": {

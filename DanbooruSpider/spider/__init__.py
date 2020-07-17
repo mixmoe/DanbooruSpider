@@ -1,27 +1,26 @@
 import asyncio
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import aiofiles
 from httpx import URL, AsyncClient, HTTPError
 
 from ..exceptions import NetworkException, SpiderException
 from ..log import logger
-from ..utils import TempFile
+from ..utils import HashCreator, Retry, TempFile
+from . import models
 
 
-class SpiderWorker:
-    def __init__(
-        self, address: Union[str, URL], workers: int = 16, proxy: Optional[str] = None
-    ) -> None:
-        addressParsed = URL(address)
-        self._referer = f"{addressParsed.scheme}://{addressParsed.host}"
+class ImageSpiderWorker:
+    def __init__(self, workers: int = 16, proxy: Optional[str] = None,) -> None:
         self._proxy = proxy
         self._workers = workers
         self._running = 0
 
-    async def _imageDownload(self, client: AsyncClient, url: str) -> Path:
+    @Retry(retries=5, delay=3)
+    async def _imageDownload(
+        self, client: AsyncClient, url: str
+    ) -> models.ImageDownload:
         urlParsed = URL(url)
         logger.trace(
             "Start downloading picture "
@@ -30,21 +29,21 @@ class SpiderWorker:
         while self._running >= self._workers:
             await asyncio.sleep(1)
         self._running += 1
+        tempfile = TempFile().create()
+        totalWrite = 0
+        hashData = HashCreator()
         try:
             response = await client.get(url)
             response.raise_for_status()
-            with TempFile(keep=True) as tmpFileName, aiofiles.open(
-                str(tmpFileName), "wb"
-            ) as f:
-                totalWrite = 0
+            async with aiofiles.open(str(tempfile), "wb") as f:
                 async for chunk in response.aiter_bytes():
-                    totalWrite += f.write(chunk)
+                    await hashData.update(chunk)
+                    totalWrite += await f.write(chunk)
             logger.trace(
                 "Finished downloading picture "
                 + f"{urlParsed.full_path!r} from {urlParsed.host!r}, "
                 + f"total write {totalWrite} bytes."
             )
-            return tmpFileName
         except HTTPError as e:
             raise NetworkException(
                 "There was an error in the network when processing the picture "
@@ -57,15 +56,22 @@ class SpiderWorker:
             )
         finally:
             self._running -= 1
+        return models.ImageDownload(
+            **{
+                "source": url,
+                "path": tempfile,
+                "size": totalWrite,
+                "md5": await hashData.hexdigest(),
+            }
+        )
 
-    async def _imageBatchDownload(self, urls: List[str]) -> Dict[str, Path]:
+    async def _imageBatchDownload(
+        self, urls: List[str]
+    ) -> Dict[str, models.ImageDownload]:
         tasks: Dict[str, asyncio.Task] = {}
         async with AsyncClient(
             proxies=self._proxy,
-            headers={
-                "Referer": self._referer,
-                "User-Agent": f"DanbooruSpider/0.0.1 {datetime.now()}",
-            },
+            headers={"User-Agent": f"DanbooruSpider/0.0.1 {datetime.now()}",},
         ) as client:
             for url in urls:
                 coroutine = self._imageDownload(client=client, url=url)
@@ -74,7 +80,7 @@ class SpiderWorker:
             while [*filter(lambda t: not t.done(), tasks.values())]:
                 await asyncio.sleep(0)
 
-        result: Dict[str, Path] = {}
+        result: Dict[str, models.ImageDownload] = {}
         for url, task in tasks.items():
             try:
                 result[url] = task.result()
@@ -84,5 +90,13 @@ class SpiderWorker:
                 logger.exception(f"A unknown error occurred in task {task}:")
         return result
 
-    async def fetchList(self, params: Dict[str, Any]):
-        pass
+    async def run(
+        self, images: List[models.DanbooruImage]
+    ) -> List[models.ImageDownload]:
+        imagesURL: Dict[str, models.DanbooruImage] = {i.imageURL: i for i in images}
+        downloadResults = await self._imageBatchDownload([*imagesURL.keys()])
+        results: List[models.ImageDownload] = []
+        for url, image in downloadResults.items():
+            image.data = imagesURL[url]
+            results.append(image)
+        return [*results]
