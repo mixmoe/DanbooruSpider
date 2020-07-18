@@ -5,12 +5,13 @@ from typing import Any, Dict
 
 import aiofiles
 
+from ..config import Config
 from ..spider.models import ImageDownload
 from ..utils import SyncToAsync
 
 DATA_PATH = Path(".") / "data" / "downloads"
 IMAGE_PATH = DATA_PATH / "images"
-HASH_DEPTH = 3
+HASH_DEPTH: int = Config["persistence"]["path-depth"].as_number()
 
 DATA_PATH.mkdir(exist_ok=True)
 IMAGE_PATH.mkdir(exist_ok=True)
