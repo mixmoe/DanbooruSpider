@@ -1,15 +1,15 @@
 import asyncio
 from itertools import count
 from random import choice as randChoice
-from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Type, Union
+from typing import Any, AsyncIterator, Dict, List, Optional, Union
 
 from httpx import URL, AsyncClient, HTTPError
 
-from ..config import VERSION, Config
-from ..exceptions import NetworkException, NotImplementedException, SpiderException
-from ..log import logger
-from ..utils import Retry
-from . import models
+from ...config import VERSION, Config
+from ...exceptions import NetworkException, NotImplementedException, SpiderException
+from ...log import logger
+from ...utils import Retry
+from .. import models
 
 ListSpiderConfig = Config["spider"]["list"]
 APIResult_T = Union[Dict[str, Any], List[Dict[str, Any]]]
@@ -86,48 +86,3 @@ class ListSpiderWorker:
                     f"An unknown error {e} occurred during fetching list from {self.site} page {pagenumber}:"
                 )
         return
-
-
-class ListSpider:
-    def __init__(self, workers: Optional[int] = None) -> None:
-        self._workers = workers or ListSpiderConfig["workers"].as_number()
-        self._spiders: Dict[str, Type[ListSpiderWorker]] = {}
-        self._spiderInstances: Dict[str, ListSpiderWorker] = {}
-        self._spiderTasks: Dict[str, asyncio.Task] = {}
-
-    def register(self, name: str, spider: Type[ListSpiderWorker]) -> int:
-        assert issubclass(spider, ListSpiderWorker)
-        assert name not in self._spiders
-        self._spiders[name] = spider
-        return len(self._spiders)
-
-    def remove(self, name: str) -> Type[ListSpiderWorker]:
-        assert name in self._spiders
-        return self._spiders.pop(name)
-
-    def configure(self, name: str, config: Dict[str, Any]) -> ListSpiderWorker:
-        assert name in self._spiders
-        assert name not in self._spiderInstances
-        worker: Type[ListSpiderWorker] = self._spiders[name]
-        workerInstance: ListSpiderWorker = worker(**config)
-        self._spiderInstances[name] = workerInstance
-        return workerInstance
-
-    async def run(self, name: str) -> asyncio.Queue:
-        async def queuePutter(worker: ListSpiderWorker, queue: asyncio.Queue) -> None:
-            async for result in worker.run():
-                await queue.put(result)
-
-        while (
-            len([*filter(lambda t: not t.done(), self._spiderTasks.values())])
-            >= self._workers
-        ):
-            await asyncio.sleep(1)
-
-        assert name in self._spiderInstances
-        assert name not in self._spiderTasks
-        worker: ListSpiderWorker = self._spiderInstances[name]
-        queue: asyncio.Queue = asyncio.Queue()
-        workTask = queuePutter(worker, queue)
-        self._spiderTasks[name] = asyncio.create_task(workTask)
-        return queue
