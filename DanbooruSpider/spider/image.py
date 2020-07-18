@@ -1,7 +1,6 @@
 import asyncio
-from datetime import datetime
 from random import choice as randChoice
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import aiofiles
 from httpx import URL, AsyncClient, HTTPError
@@ -30,17 +29,16 @@ class ImageSpiderWorker:
     async def _imageDownload(
         self, client: AsyncClient, url: str
     ) -> models.ImageDownload:
+        while self._running >= self._workers:
+            await asyncio.sleep(1)
+        self._running += 1
+
         urlParsed = URL(url)
         logger.trace(
             "Start downloading picture "
             + f"{urlParsed.full_path!r} from {urlParsed.host!r}."
         )
-        while self._running >= self._workers:
-            await asyncio.sleep(1)
-        self._running += 1
-        tempfile = TempFile().create()
-        totalWrite = 0
-        hashData = HashCreator()
+        tempfile, hashData, totalWrite = TempFile().create(), HashCreator(), 0
         try:
             response = await client.get(url)
             response.raise_for_status()
@@ -77,7 +75,6 @@ class ImageSpiderWorker:
     async def _imageBatchDownload(
         self, urls: List[str]
     ) -> Dict[str, models.ImageDownload]:
-        tasks: Dict[str, asyncio.Task] = {}
         async with AsyncClient(
             proxies=self._proxy,
             headers={
@@ -87,22 +84,27 @@ class ImageSpiderWorker:
                 ),
             },
         ) as client:
-            for url in urls:
-                coroutine = self._imageDownload(client=client, url=url)
-                tasks[url] = asyncio.create_task(coroutine)
+            results: Dict[str, Union[Exception, models.ImageDownload]] = dict(
+                zip(
+                    urls,
+                    await asyncio.gather(
+                        *[self._imageDownload(client=client, url=url) for url in urls],
+                        return_exceptions=True,
+                    ),
+                )
+            )
 
-            while [*filter(lambda t: not t.done(), tasks.values())]:
-                await asyncio.sleep(0)
-
-        result: Dict[str, models.ImageDownload] = {}
-        for url, task in tasks.items():
+        for url, exc in results.items():
+            if not isinstance(exc, Exception):
+                continue
             try:
-                result[url] = task.result()
+                raise exc
             except NetworkException as e:
-                logger.debug(f"A network error occurred in task {task}: {e}")
-            except Exception:
-                logger.exception(f"A unknown error occurred in task {task}:")
-        return result
+                logger.debug(f"A network error occurred while processing {url!r}: {e}")
+            except Exception as e:
+                logger.exception(f"An unknown error occurred while processing {url!r}:")
+
+        return {k: v for k, v in results.items() if isinstance(v, models.ImageDownload)}
 
     async def run(
         self, images: List[models.DanbooruImage]
