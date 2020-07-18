@@ -1,5 +1,6 @@
 # Customized ignore
 *.yml
+data/*/*
 !*.default.*
 
 # Byte-compiled / optimized / DLL files

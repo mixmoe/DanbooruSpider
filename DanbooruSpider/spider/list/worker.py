@@ -11,7 +11,7 @@ from ...log import logger
 from ...utils import Retry
 from .. import models
 
-ListSpiderConfig = Config["spider"]["list"]
+ListSpiderConfig = Config["spider"]["lists"]
 APIResult_T = Union[Dict[str, Any], List[Dict[str, Any]]]
 DanbooruImageList_T = List[models.DanbooruImage]
 
@@ -23,12 +23,12 @@ class ListSpiderWorker:
         pass
 
     @Retry(
-        retries=ListSpiderConfig["times"].as_number(),
-        delay=ListSpiderConfig["delay"].as_number(),
+        retries=ListSpiderConfig["retries"]["times"].as_number(),
+        delay=ListSpiderConfig["retries"]["delay"].as_number(),
     )
     async def _listDownload(self, client: AsyncClient, url: str) -> APIResult_T:
         urlParsed = URL(url)
-        logger.trace(
+        logger.info(
             "Start downloading list "
             + f"{urlParsed.full_path!r} from {urlParsed.host!r}."
         )
@@ -37,7 +37,7 @@ class ListSpiderWorker:
                 url,
                 headers={
                     "User-Agent": randChoice(
-                        ListSpiderConfig["user-agents"].get(List[str])
+                        ListSpiderConfig["user-agents"].get(list)
                         or [f"DanbooruSpider/{VERSION}"]
                     )
                 },
@@ -67,7 +67,7 @@ class ListSpiderWorker:
         raise NotImplementedException
 
     async def run(
-        self, begin: int = 0, end: Optional[int] = None, size: Optional[int] = None
+        self, begin: int = 1, end: Optional[int] = None, size: Optional[int] = None
     ) -> AsyncIterator[DanbooruImageList_T]:
         size = size or ListSpiderConfig["size"].as_number()
         end = end or ListSpiderConfig["max-page"].as_number()

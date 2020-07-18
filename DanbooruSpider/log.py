@@ -33,7 +33,7 @@ class _LoguruHandler(logging.Handler):
         loguru.logger.opt(depth=depth, exception=record.exc_info).log(level, message)
 
 
-def loggerFactory() -> loguru.Logger:
+def loggerFactory():
     logger = loguru.logger
     logger.remove()
     logger.add(sys.stdout, enqueue=True, level=LOGGER_LEVEL, format=LOGGER_FORMAT)

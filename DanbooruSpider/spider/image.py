@@ -18,7 +18,9 @@ class ImageSpiderWorker:
     def __init__(
         self, workers: Optional[int] = None, proxy: Optional[str] = None,
     ) -> None:
-        self._proxy: str = proxy or ImageSpiderConfig["proxy"].as_str()
+        self._proxy: Optional[str] = proxy or ImageSpiderConfig[
+            "proxy"
+        ].as_str() or None
         self._workers: int = workers or ImageSpiderConfig["workers"].as_number()
         self._running = 0
 
@@ -27,7 +29,7 @@ class ImageSpiderWorker:
         delay=ImageSpiderConfig["retries"]["delay"].as_number(),
     )
     async def _imageDownload(
-        self, client: AsyncClient, url: str
+        self, client: AsyncClient, url: str, temp: Optional[str] = None
     ) -> models.ImageDownload:
         while self._running >= self._workers:
             await asyncio.sleep(1)
@@ -38,7 +40,11 @@ class ImageSpiderWorker:
             "Start downloading picture "
             + f"{urlParsed.full_path!r} from {urlParsed.host!r}."
         )
-        tempfile, hashData, totalWrite = TempFile().create(), HashCreator(), 0
+        tempfile, hashData, totalWrite = (
+            TempFile(folder=temp).create(),
+            HashCreator(),
+            0,
+        )
         try:
             response = await client.get(url)
             response.raise_for_status()
@@ -79,7 +85,7 @@ class ImageSpiderWorker:
             proxies=self._proxy,
             headers={
                 "User-Agent": randChoice(
-                    ImageSpiderConfig["user-agents"].get(List[str])
+                    ImageSpiderConfig["user-agents"].get(list)
                     or [f"DanbooruSpider/{VERSION}"]
                 ),
             },

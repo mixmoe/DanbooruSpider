@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -19,6 +19,7 @@ class DanbooruImage(BaseModel):
     imageURL: str
     imageMD5: str
     imageExt: str
+    metadata: Dict[str, Any]
 
 
 class ImageDownload(BaseModel):

@@ -20,16 +20,19 @@ class ApplicationConfiguration(confuse.Configuration):
         Path(self._config_path).mkdir(exist_ok=True)
         return str(self._config_path)
 
+    def user_config_path(self) -> str:
+        return str(Path(self._config_path) / CONFIG_NAME)
+
     def _add_default_source(self):
         assert Path(self._default).is_file()
         data = confuse.load_yaml(self._default, loader=self.loader)
         self.add(confuse.ConfigSource(data, filename=self._default, default=True))
 
-    def _add_config_source(self):
+    def _add_user_source(self):
         if not Path(self._config).is_file():
             Path(self._config).write_bytes(Path(self._default).read_bytes())
         data = confuse.load_yaml(self._config, loader=self.loader)
-        self.add(confuse.ConfigSource(data, filename=self._config))
+        self.add(confuse.ConfigSource(data, filename=self._config, default=True))
 
 
 Config = ApplicationConfiguration()

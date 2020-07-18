@@ -5,7 +5,7 @@ general:
       <level>
       <v>{level:^10}</v>
       [{time:YYYY/MM/DD} {time:HH:mm:ss.SSS} <d>{module}:{name}</d>]</level>
-      <u>{message}</>
+      <l>{message}</>
   version: 0.0.1
 
 snippets:
@@ -65,3 +65,5 @@ spider:
         impl: danbooru-unified
         config:
           url: https://danbooru.donmai.us/posts.json
+
+persistence:

@@ -5,6 +5,7 @@ from functools import partial, wraps
 from hashlib import md5
 from inspect import iscoroutinefunction
 from pathlib import Path
+from shutil import rmtree
 from time import sleep as sleepSync
 from time import time
 from typing import Any, Awaitable, Callable, Optional
@@ -15,6 +16,7 @@ from .log import logger
 TEMP_FILE_DIR = Path(".") / "data" / "temp"
 
 _EXECUTOR = ThreadPoolExecutor()
+rmtree(TEMP_FILE_DIR, ignore_errors=True)
 TEMP_FILE_DIR.mkdir(exist_ok=True)
 
 
@@ -48,7 +50,7 @@ class TempFolder:
         return self._fullPath.absolute()
 
     def clean(self) -> None:
-        self._fullPath.rmdir()
+        rmtree(self._fullPath, ignore_errors=True)
 
     def __enter__(self) -> Path:
         return self.create()
@@ -147,3 +149,12 @@ class HashCreator:
     @SyncToAsync
     def hexdigest(self) -> str:
         return self._hash.hexdigest()
+
+
+class AsyncTempFolder(TempFolder):
+    async def __aenter__(self) -> Path:
+        return self.__enter__()
+
+    @SyncToAsync
+    def __aexit__(self):
+        self.__exit__()

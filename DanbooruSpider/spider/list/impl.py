@@ -5,7 +5,13 @@ from .worker import APIResult_T, DanbooruImageList_T, ListSpiderWorker
 
 
 def _getRating(rating: str) -> Ratings:
-    return {str(i): i for i in Ratings.__members__.values()}[rating.lower()]
+    return {i.value: i for i in Ratings.__members__.values()}[rating.lower()]
+
+
+def _getExt(url: str) -> str:
+    path = URL(url).full_path
+    name, ext = path.rsplit(".", 1)
+    return ext
 
 
 class DanbooruUnified(ListSpiderWorker):
@@ -23,13 +29,14 @@ class DanbooruUnified(ListSpiderWorker):
                     "source": self.site,
                     "tags": [
                         j.strip()
-                        for j in i.get("tags", i["tag_string"]).split(" ")
+                        for j in i["tags" if "tags" in i else "tag_string"].split(" ")
                         if j.strip()
                     ],
                     "rating": _getRating(i["rating"]),
                     "imageURL": i["file_url"],
                     "imageMD5": i["md5"],
-                    "imageExt": i["file_ext"],
+                    "imageExt": _getExt(i["file_url"]),
+                    "metadata": i.copy(),
                 }
             )
             for i in data
