@@ -2,6 +2,7 @@ import asyncio
 from typing import Any, Dict, Optional, Type
 
 from ...config import Config
+from .impl import DanbooruUnified
 from .worker import ListSpiderWorker
 
 ListSpiderConfig = Config["spider"]["list"]
@@ -61,3 +62,6 @@ class ListSpiderManager:
         assert name in cls._tasks
         task: asyncio.Task = cls._tasks[name]
         return task.cancel()
+
+ListSpiderManager.register("danbooru-unified", DanbooruUnified)
+

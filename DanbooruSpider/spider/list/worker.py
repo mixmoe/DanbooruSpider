@@ -63,7 +63,7 @@ class ListSpiderWorker:
     async def parse(self, data: APIResult_T) -> DanbooruImageList_T:
         raise NotImplementedException
 
-    async def fetch(self, page: int, *, size: Optional[int] = None) -> APIResult_T:
+    async def fetch(self, page: int, size: int) -> APIResult_T:
         raise NotImplementedException
 
     async def run(
@@ -75,8 +75,12 @@ class ListSpiderWorker:
             if pagenumber >= end:
                 break
             try:
-                apiRequestResult: APIResult_T = await self.fetch(pagenumber, size=size)
-                yield await self.parse(apiRequestResult)
+                result: DanbooruImageList_T = await self.parse(
+                    await self.fetch(pagenumber, size=size)
+                )
+                if not result:
+                    break
+                yield result
             except NetworkException as e:
                 logger.warning(
                     f"A network error {e} occurred during fetching list from {self.site} page {pagenumber}."

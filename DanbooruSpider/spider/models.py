@@ -5,7 +5,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 
-class Ratings(Enum, str):
+class Ratings(str, Enum):
     SAFE = "s"
     QUESTIONABLE = "q"
     EXPLICIT = "e"
