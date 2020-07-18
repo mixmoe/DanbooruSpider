@@ -7,13 +7,19 @@
     ],
     "cSpell.words": [
         "Danbooru",
+        "KHTML",
+        "MSIE",
         "Referer",
         "aiofiles",
         "aiter",
         "asyncio",
         "httpx",
         "iscoroutinefunction",
-        "levelno"
+        "itertools",
+        "konachan",
+        "levelno",
+        "yande",
+        "yandere"
     ],
     "[python]": {
         "editor.codeActionsOnSave": {

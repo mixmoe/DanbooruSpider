@@ -5,8 +5,12 @@ from typing import Any
 
 import loguru
 
-LOGGER_FORMAT: str = r"<level> <v>{level:^10}</v> [{time:YYYY/MM/DD} {time:HH:mm:ss.SSS} <d>{module}:{name}</d>]</level> <u>{message}</>"
-LOGGER_LEVEL: int = 10
+from .config import Config
+
+LogConfig = Config["general"]["log"]
+
+LOGGER_FORMAT: str = LogConfig["format"].as_str()
+LOGGER_LEVEL: str = LogConfig["level"].as_str().upper()
 LOGGER_FILE_DIR: Path = Path(".") / "data" / "logs"
 
 LOGGER_FILE_DIR.mkdir(exist_ok=True)

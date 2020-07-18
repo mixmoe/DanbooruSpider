@@ -1,23 +1,32 @@
 import asyncio
 from datetime import datetime
+from random import choice as randChoice
 from typing import Dict, List, Optional
 
 import aiofiles
 from httpx import URL, AsyncClient, HTTPError
 
+from ..config import VERSION, Config
 from ..exceptions import NetworkException, SpiderException
 from ..log import logger
 from ..utils import HashCreator, Retry, TempFile
 from . import models
 
+ImageSpiderConfig = Config["spider"]["images"]
+
 
 class ImageSpiderWorker:
-    def __init__(self, workers: int = 16, proxy: Optional[str] = None,) -> None:
-        self._proxy = proxy
-        self._workers = workers
+    def __init__(
+        self, workers: Optional[int] = None, proxy: Optional[str] = None,
+    ) -> None:
+        self._proxy: str = proxy or ImageSpiderConfig["proxy"].as_str()
+        self._workers: int = workers or ImageSpiderConfig["workers"].as_number()
         self._running = 0
 
-    @Retry(retries=5, delay=3)
+    @Retry(
+        retries=ImageSpiderConfig["retries"]["times"].as_number(),
+        delay=ImageSpiderConfig["retries"]["delay"].as_number(),
+    )
     async def _imageDownload(
         self, client: AsyncClient, url: str
     ) -> models.ImageDownload:
@@ -71,7 +80,12 @@ class ImageSpiderWorker:
         tasks: Dict[str, asyncio.Task] = {}
         async with AsyncClient(
             proxies=self._proxy,
-            headers={"User-Agent": f"DanbooruSpider/0.0.1 {datetime.now()}",},
+            headers={
+                "User-Agent": randChoice(
+                    ImageSpiderConfig["user-agents"].get(List[str])
+                    or [f"DanbooruSpider/{VERSION}"]
+                ),
+            },
         ) as client:
             for url in urls:
                 coroutine = self._imageDownload(client=client, url=url)

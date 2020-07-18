@@ -2,11 +2,11 @@ from asyncio import AbstractEventLoop, get_event_loop
 from asyncio import sleep as sleepAsync
 from concurrent.futures.thread import ThreadPoolExecutor
 from functools import partial, wraps
+from hashlib import md5
 from inspect import iscoroutinefunction
 from pathlib import Path
 from time import sleep as sleepSync
 from time import time
-from hashlib import md5
 from typing import Any, Awaitable, Callable, Optional
 from uuid import uuid4
 
@@ -28,12 +28,33 @@ class TempFile:
     def create(self) -> Path:
         return self._fullPath.absolute()
 
+    def clean(self) -> None:
+        self._fullPath.rmdir()
+
     def __enter__(self) -> Path:
         return self.create()
 
     def __exit__(self, *_) -> None:
+        self.clean()
+
+
+class TempFolder:
+    def __init__(self, *, folder: Optional[str] = None) -> None:
+        folderPath = Path(folder or str(TEMP_FILE_DIR))
+        self._fullPath = folderPath / uuid4().hex
+        self._fullPath.mkdir(exist_ok=True)
+
+    def create(self) -> Path:
+        return self._fullPath.absolute()
+
+    def clean(self) -> None:
         self._fullPath.rmdir()
-        return
+
+    def __enter__(self) -> Path:
+        return self.create()
+
+    def __exit__(self, *_) -> None:
+        self.clean()
 
 
 def Timing(func: Callable) -> Callable:
@@ -75,13 +96,13 @@ def Retry(
     def syncWrapper(*args, **kwargs) -> Any:
         for i in range(retries):
             try:
-                return func(*args, **kwargs)
+                return func(*args, **kwargs)  # type: ignore
             except Exception as e:
                 if i == (retries - 1):
                     raise
                 logger.trace(
                     f"Error {e!r}{e} occurred during executing sync function "
-                    + f"{func.__qualname__!r}, retring ({i}/{retries})."
+                    + f"{func.__qualname__!r}, retring ({i}/{retries})."  # type: ignore
                 )
             sleepSync(delay)
 
@@ -90,13 +111,13 @@ def Retry(
     async def asyncWrapper(*args, **kwargs) -> Any:
         for i in range(retries):
             try:
-                return await func(*args, **kwargs)
+                return await func(*args, **kwargs)  # type: ignore
             except Exception as e:
                 if i == (retries - 1):
                     raise
                 logger.trace(
                     f"Error {e!r}{e} occurred during executing async function "
-                    + f"{func.__qualname__!r}, retring ({i}/{retries})."
+                    + f"{func.__qualname__!r}, retring ({i}/{retries})."  # type: ignore
                 )
             await sleepAsync(delay)
 

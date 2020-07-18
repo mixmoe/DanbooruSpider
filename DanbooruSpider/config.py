@@ -32,4 +32,5 @@ class ApplicationConfiguration(confuse.Configuration):
         self.add(confuse.ConfigSource(data, filename=self._config))
 
 
-CONFIG = Config = ApplicationConfiguration()
+Config = ApplicationConfiguration()
+VERSION: str = Config["general"]["version"].as_str()

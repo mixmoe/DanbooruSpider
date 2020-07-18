@@ -8,3 +8,7 @@ class SpiderException(DanbooruException):
 
 class NetworkException(SpiderException):
     pass
+
+
+class NotImplementedException(DanbooruException):
+    pass
