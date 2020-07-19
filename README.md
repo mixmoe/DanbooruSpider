@@ -2,11 +2,13 @@
 
 **An efficient crawler based on Python asynchronous, can act on multiple image websites that use [Danbooru](https://github.com/danbooru/danbooru) as the backend**
 
+This document is available under [Chinese](README.zh.md)
+
 [![GitHub license](https://img.shields.io/github/license/mnixry/DanbooruSpider)](https://github.com/mnixry/DanbooruSpider/blob/master/LICENSE) [![GitHub issues ](https://img.shields.io/github/issues/mnixry/DanbooruSpider)](https://github.com/mnixry/DanbooruSpider/issues) [![GitHub stars](https://img.shields.io/github/stars/mnixry/DanbooruSpider)](https://github.com/mnixry/DanbooruSpider/stargazers) [![GitHub forks](https://img.shields.io/github/forks/mnixry/DanbooruSpider)](https://github.com/mnixry/DanbooruSpider/network) ![Python Version](https://img.shields.io/badge/Python-3.8%2B-brightgreen)
 
 ## Advantages
 
-### General
+### Universal
 
 - Currently supports the following multiple sites
     - [yande.re](http://yande.re/)
