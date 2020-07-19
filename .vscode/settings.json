@@ -1,0 +1,33 @@
+{
+    "python.formatting.provider": "black",
+    "python.linting.mypyEnabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.linting.flake8Args": [
+        "--max-line-length 90"
+    ],
+    "cSpell.words": [
+        "Danbooru",
+        "KHTML",
+        "MSIE",
+        "Referer",
+        "aenter",
+        "aiofiles",
+        "aiter",
+        "asyncio",
+        "httpx",
+        "iscoroutinefunction",
+        "itertools",
+        "konachan",
+        "levelno",
+        "mnixry",
+        "sqlite",
+        "yande",
+        "yandere"
+    ],
+    "[python]": {
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        }
+    },
+    "python.pythonPath": ".venv/bin/python"
+}
