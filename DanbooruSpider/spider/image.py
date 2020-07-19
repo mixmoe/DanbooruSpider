@@ -8,6 +8,7 @@ from httpx import URL, AsyncClient, HTTPError
 from ..config import VERSION, Config
 from ..exceptions import NetworkException, SpiderException
 from ..log import logger
+from ..persistence import Persistence, Services
 from ..utils import HashCreator, Retry, TempFile
 from . import models
 
@@ -29,7 +30,7 @@ class ImageSpiderWorker:
         delay=ImageSpiderConfig["retries"]["delay"].as_number(),
     )
     async def _imageDownload(
-        self, client: AsyncClient, url: str, temp: Optional[str] = None
+        self, client: AsyncClient, url: str,
     ) -> models.ImageDownload:
         while self._running >= self._workers:
             await asyncio.sleep(1)
@@ -40,13 +41,17 @@ class ImageSpiderWorker:
             "Start downloading picture "
             + f"{urlParsed.full_path!r} from {urlParsed.host!r}."
         )
-        tempfile, hashData, totalWrite = (
-            TempFile(folder=temp).create(),
-            HashCreator(),
-            0,
-        )
+        tempfile, hashData, totalWrite = TempFile().create(), HashCreator(), 0
         try:
-            response = await client.get(url)
+            response = await client.get(
+                url,
+                headers={
+                    "User-Agent": randChoice(
+                        ImageSpiderConfig["user-agents"].get(list)
+                        or [f"DanbooruSpider/{VERSION}"]
+                    ),
+                },
+            )
             response.raise_for_status()
             async with aiofiles.open(str(tempfile), "wb") as f:
                 async for chunk in response.aiter_bytes():
@@ -81,20 +86,15 @@ class ImageSpiderWorker:
     async def _imageBatchDownload(
         self, urls: List[str]
     ) -> Dict[str, models.ImageDownload]:
-        async with AsyncClient(
-            proxies=self._proxy,
-            headers={
-                "User-Agent": randChoice(
-                    ImageSpiderConfig["user-agents"].get(list)
-                    or [f"DanbooruSpider/{VERSION}"]
-                ),
-            },
-        ) as client:
+        async with AsyncClient(proxies=self._proxy,) as client:
             results: Dict[str, Union[Exception, models.ImageDownload]] = dict(
                 zip(
                     urls,
                     await asyncio.gather(
-                        *[self._imageDownload(client=client, url=url) for url in urls],
+                        *map(
+                            lambda url: self._imageDownload(client=client, url=url),
+                            urls,
+                        ),
                         return_exceptions=True,
                     ),
                 )
@@ -115,10 +115,25 @@ class ImageSpiderWorker:
     async def run(
         self, images: List[models.DanbooruImage]
     ) -> List[models.ImageDownload]:
-        imagesURL: Dict[str, models.DanbooruImage] = {i.imageURL: i for i in images}
+        imagesURL: Dict[str, models.DanbooruImage] = {}
+        for data in images:
+            if await Services.checkImageExist(md5=data.imageMD5):
+                logger.debug(
+                    f"Skip download of picture {data.id} from {data.source!r} "
+                    + f"due to the file md5 {data.imageMD5!r} has been exist in database."
+                )
+                continue
+            imagesURL[data.imageURL] = data
         downloadResults = await self._imageBatchDownload([*imagesURL.keys()])
         results: List[models.ImageDownload] = []
         for url, image in downloadResults.items():
             image.data = imagesURL[url]
+            if not Persistence.verify(image):
+                logger.debug(
+                    f"Image {image.data.id} from {image.data.source!r} download failed "
+                    + f"due to the file md5 {image.md5.lower()} didn't "
+                    + f"match origin file {image.data.imageMD5.lower()}."
+                )
+                continue
             results.append(image)
-        return [*results]
+        return results

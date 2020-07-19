@@ -68,7 +68,7 @@ spider:
 
 persistence:
   database:
-    uri: sqlite:///data/database.sqlite3
+    uri: sqlite:///data/downloads/database.sqlite3
     connect-args:
       check_same_thread: false
     echo-sql-exec: false

@@ -61,11 +61,11 @@ class DatabaseAccessRoot:
         self.table = table
         self._engine = create_engine(
             DatabaseConfig["uri"].as_str(),
-            connect_args=DatabaseConfig["uri"].get(dict),
+            connect_args=DatabaseConfig["connect-args"].get(dict),
             echo=DatabaseConfig["echo-sql-exec"].get(bool),
         )
         self._sessionfactory: Callable[[], Session] = sessionmaker(
-            bind=self._engine, auto_commit=True
+            bind=self._engine, autocommit=True
         )
         tableMetadata: Table = self.table.__table__
         tableMetadata.name = name or self.table.__tablename__

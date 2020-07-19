@@ -1,7 +1,7 @@
 import asyncio
 
 from DanbooruSpider.config import Config
-from DanbooruSpider.persistence import Persistence
+from DanbooruSpider.persistence import Persistence, Services
 from DanbooruSpider.spider.image import ImageSpiderWorker
 from DanbooruSpider.spider.list import ListSpiderManager
 from DanbooruSpider.spider.list.worker import DanbooruImageList_T
@@ -14,9 +14,9 @@ async def customer(queue: asyncio.Queue):
     while True:
         listData: DanbooruImageList_T = await queue.get()
         downloaded = await worker.run(listData)
-        await asyncio.gather(
-            *[Persistence.save(i) for i in downloaded if Persistence.verify(i)]
-        )
+        for i in downloaded:
+            i.path = await Persistence.save(i)
+            await Services.createImage(i)
 
 
 async def main():
@@ -31,4 +31,7 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        exit()
