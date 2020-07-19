@@ -27,4 +27,4 @@ class ImageDownload(BaseModel):
     path: Path
     size: int
     md5: str
-    data: Optional[DanbooruImage] = None
+    data: DanbooruImage
