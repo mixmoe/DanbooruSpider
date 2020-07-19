@@ -32,5 +32,4 @@ class TagsRelationCreate(BaseModel):
 
 
 class TagsRelationRead(TagsRelationCreate):
-    rid: int
     create_time: datetime

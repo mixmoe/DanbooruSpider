@@ -31,19 +31,17 @@ class Persistence:
 
     @staticmethod
     @SyncToAsync
-    def _move(source: str, destination: str) -> None:
-        moveFile(source, destination)
+    def _move(source: Path, destination: Path) -> None:
+        moveFile(str(source), str(destination))
 
     @classmethod
     async def save(cls, image: ImageDownload) -> Path:
         assert image.data
-        savePath = IMAGE_PATH / ("/".join(image.md5[:HASH_DEPTH]))
-        savePath.mkdir(parents=True, exist_ok=True)
-        imagePath = savePath / f"{image.md5}.{image.data.imageExt}"
-        metadataPath = savePath / f"{image.md5}.json"
-        await cls._move(
-            str(image.path), str(imagePath),
-        )
-        async with aiofiles.open(str(metadataPath), "wt", encoding="utf-8") as f:
+        folder = IMAGE_PATH / ("/".join(image.md5[:HASH_DEPTH]))
+        folder.mkdir(parents=True, exist_ok=True)
+        filePath = folder / f"{image.md5}.{image.data.imageExt}"
+        metadataPath = folder / f"{image.md5}.json"
+        await cls._move(image.path, filePath)
+        async with aiofiles.open(metadataPath, "wt", encoding="utf-8") as f:
             await f.write(await cls._dump(image.data.dict()))
-        return imagePath
+        return filePath

@@ -27,7 +27,6 @@ class Tags(Base):
 
 class TagRelations(Base):
     __tablename__ = "tag_relations"
-    rid = Column(Integer, primary_key=True, autoincrement=True)
-    tid = Column(Integer, ForeignKey("tags.tid"), index=True, nullable=False)
-    pid = Column(Integer, ForeignKey("pictures.pid"), index=True, nullable=False)
+    tid = Column(Integer, ForeignKey("tags.tid"), primary_key=True)
+    pid = Column(Integer, ForeignKey("pictures.pid"), primary_key=True)
     create_time = Column(DateTime, nullable=False, default=datetime.now)
