@@ -9,8 +9,11 @@ from random import randint
 from shutil import rmtree
 from time import sleep as sleepSync
 from time import time
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, Optional, Union
 from uuid import uuid4
+
+import aiofiles
+from aiofiles.base import AiofilesContextManager
 
 from .log import logger
 
@@ -19,6 +22,8 @@ TEMP_FILE_DIR = Path(".") / "data" / "temp"
 _EXECUTOR = ThreadPoolExecutor()
 rmtree(TEMP_FILE_DIR, ignore_errors=True)
 TEMP_FILE_DIR.mkdir(exist_ok=True)
+
+AsyncFunc_T = Callable[..., Awaitable[Any]]
 
 
 class TempFile:
@@ -97,43 +102,54 @@ def Retry(
     @Timing
     @wraps(func)
     def syncWrapper(*args, **kwargs) -> Any:
+        assert func
         for i in range(retries):
             try:
-                return func(*args, **kwargs)  # type: ignore
+                return func(*args, **kwargs)
             except Exception as e:
                 if i == (retries - 1):
                     raise
                 logger.trace(
                     f"Error {e!r}{e} occurred during executing sync function "
-                    + f"{func.__qualname__!r}, retring ({i}/{retries})."  # type: ignore
+                    + f"{func.__qualname__!r}, retring ({i}/{retries})."
                 )
             sleepSync(delay if delay > 0 else randint(0, 10))
 
     @Timing
     @wraps(func)
     async def asyncWrapper(*args, **kwargs) -> Any:
+        assert func
         for i in range(retries):
             try:
-                return await func(*args, **kwargs)  # type: ignore
+                return await func(*args, **kwargs)
             except Exception as e:
                 if i == (retries - 1):
                     raise
                 logger.trace(
                     f"Error {e!r}{e} occurred during executing async function "
-                    + f"{func.__qualname__!r}, retring ({i}/{retries})."  # type: ignore
+                    + f"{func.__qualname__!r}, retring ({i}/{retries})."
                 )
             await sleepAsync(delay if delay > 0 else randint(0, 10))
 
     return asyncWrapper if iscoroutinefunction(func) else syncWrapper
 
 
-def SyncToAsync(func: Callable) -> Callable[..., Awaitable]:
+def SyncToAsync(
+    func: Optional[Callable] = None,
+    *,
+    loop: Optional[AbstractEventLoop] = None,
+    executor: Optional[ThreadPoolExecutor] = None,
+) -> AsyncFunc_T:
+    if func is None:
+        return partial(SyncToAsync, executor=executor)  # type: ignore
+
     @Timing
     @wraps(func)
     async def wrapper(*args, **kwargs) -> Any:
-        loop: AbstractEventLoop = get_event_loop()
-        runner: Callable[[], Any] = lambda: func(*args, **kwargs)
-        return await loop.run_in_executor(_EXECUTOR, runner)
+        assert func
+        eventLoop: AbstractEventLoop = loop or get_event_loop()
+        runner: Callable[[], Any] = lambda: func(*args, **kwargs)  # type: ignore
+        return await eventLoop.run_in_executor(executor or _EXECUTOR, runner)
 
     return wrapper
 
@@ -150,3 +166,24 @@ class HashCreator:
     @SyncToAsync
     def hexdigest(self) -> str:
         return self._hash.hexdigest()
+
+
+def AsyncOpen(
+    file: Union[str, Path],
+    mode: str = "r",
+    buffering: int = -1,
+    encoding: str = None,
+    errors: str = None,
+    *,
+    loop: Optional[AbstractEventLoop] = None,
+    executor: Optional[ThreadPoolExecutor] = None,
+) -> AiofilesContextManager:
+    return aiofiles.open(
+        file=file,
+        mode=mode,
+        buffering=buffering,
+        encoding=encoding,
+        errors=errors,
+        loop=(loop or get_event_loop()),
+        executor=(executor or _EXECUTOR),
+    )

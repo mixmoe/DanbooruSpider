@@ -1,6 +1,8 @@
 # Customized ignore
 *.yml
-data/*/*
+*.sqlite3
+*.sqlite3-journal
+data/*
 !*.default.*
 
 # Byte-compiled / optimized / DLL files

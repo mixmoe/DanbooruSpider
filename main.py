@@ -1,22 +1,25 @@
 import asyncio
+from typing import NoReturn
 
 from DanbooruSpider.config import Config
+from DanbooruSpider.log import logger
 from DanbooruSpider.persistence import Persistence, Services
-from DanbooruSpider.spider.image import ImageSpiderWorker
-from DanbooruSpider.spider.list import ListSpiderManager
-from DanbooruSpider.spider.list.worker import DanbooruImageList_T
+from DanbooruSpider.spider import ImageSpiderWorker, ListSpiderManager
 
 SpidersConfig = Config["spider"]["lists"]["spiders"]
 
 
-async def customer(queue: asyncio.Queue):
-    worker = ImageSpiderWorker()
-    while True:
-        listData: DanbooruImageList_T = await queue.get()
-        downloaded = await worker.run(listData)
-        for i in downloaded:
-            i.path = await Persistence.save(i)
-            await Services.createImage(i)
+async def customer(queue: asyncio.Queue) -> None:
+    worker = ImageSpiderWorker(queue)
+    async for image in worker.results():
+        if not Persistence.verify(image):
+            logger.warning(
+                f"Hash verify of image {image.source!r} failed. "
+                + f"({image.md5} did not match {image.data.imageMD5})"
+            )
+            continue
+        image.path = await Persistence.save(image)
+        await Services.createImage(image)
 
 
 async def main():
