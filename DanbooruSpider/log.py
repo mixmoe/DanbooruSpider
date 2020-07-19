@@ -9,7 +9,7 @@ from .config import Config
 
 LogConfig = Config["general"]["log"]
 
-LOGGER_FORMAT: str = LogConfig["format"].as_str()
+LOGGER_FORMAT: str = LogConfig["format"].as_str().strip()
 LOGGER_LEVEL: str = LogConfig["level"].as_str().upper()
 LOGGER_FILE_DIR: Path = Path(".") / "data" / "logs"
 

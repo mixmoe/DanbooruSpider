@@ -2,14 +2,13 @@ import asyncio
 from random import choice as randChoice
 from typing import Dict, List, Optional, Union
 
-import aiofiles
 from httpx import URL, AsyncClient, HTTPError
 
 from ..config import VERSION, Config
 from ..exceptions import NetworkException, SpiderException
 from ..log import logger
 from ..persistence import Persistence, Services
-from ..utils import HashCreator, Retry, TempFile
+from ..utils import AsyncOpen, HashCreator, Retry, TempFile
 from . import models
 
 ImageSpiderConfig = Config["spider"]["images"]
@@ -53,7 +52,7 @@ class ImageSpiderWorker:
                 },
             )
             response.raise_for_status()
-            async with aiofiles.open(str(tempfile), "wb") as f:
+            async with AsyncOpen(str(tempfile), "wb") as f:
                 async for chunk in response.aiter_bytes():
                     await hashData.update(chunk)
                     totalWrite += await f.write(chunk)

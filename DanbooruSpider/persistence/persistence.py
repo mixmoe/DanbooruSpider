@@ -3,11 +3,9 @@ from pathlib import Path
 from shutil import move as moveFile
 from typing import Any, Dict
 
-import aiofiles
-
 from ..config import Config
 from ..spider.models import ImageDownload
-from ..utils import SyncToAsync
+from ..utils import AsyncOpen, SyncToAsync
 
 DATA_PATH = Path(".") / "data" / "downloads"
 IMAGE_PATH = DATA_PATH / "images"
@@ -42,6 +40,6 @@ class Persistence:
         filePath = folder / f"{image.md5}.{image.data.imageExt}"
         metadataPath = folder / f"{image.md5}.json"
         await cls._move(image.path, filePath)
-        async with aiofiles.open(metadataPath, "wt", encoding="utf-8") as f:
+        async with AsyncOpen(metadataPath, "wt", encoding="utf-8") as f:
             await f.write(await cls._dump(image.data.dict()))
         return filePath
