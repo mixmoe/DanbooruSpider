@@ -1,13 +1,28 @@
-general:
+#     ____              __                          _____       _     __
+#    / __ \____ _____  / /_  ____  ____  _______  _/ ___/____  (_____/ ___  _____
+#   / / / / __ `/ __ \/ __ \/ __ \/ __ \/ ___/ / / \__ \/ __ \/ / __  / _ \/ ___/
+#  / /_/ / /_/ / / / / /_/ / /_/ / /_/ / /  / /_/ ___/ / /_/ / / /_/ /  __/ /
+# /_____/\__,_/_/ /_/_.___/\____/\____/_/   \__,_/____/ .___/_/\__,_/\___/_/
+#                                                    /_/
+#
+# A general purpose image spider based on Danbooru API.
+
+general: # Global configuration related
   log:
+    # Log level, There are the following types
+    # trace > debug > into > warning > error
     level: info
+    # Log format, Please refer to
+    # https://loguru.readthedocs.io/en/stable/api/logger.html#record
     format: >
       <level>
       <v>{level:^8}</v>
       [{time:YYYY/MM/DD} {time:HH:mm:ss.SSS} <d>{module}:{name}</d>]</level>
       {message}
-  version: 0.1.0
+  version: 0.1.1 # Don't touch
 
+# To facilitate the use of the established snippet
+# it does not participate in reading
 snippets:
   proxy: &proxy ""
   user-agents: &user-agents
@@ -36,14 +51,17 @@ spider:
   images:
     proxy: *proxy
     user-agents: *user-agents
-    workers: 16
+    workers: 16 # Number of concurrent jobs
     retries:
+      # Number of retries
       times: 3
+      # If the delay is negative
+      # then any delay between 0 and 10 will be taken at random
       delay: -1
   lists:
     proxy: *proxy
     user-agents: *user-agents
-    size: 100
+    size: 100 #Size of each page
     queue-size: 5
     max-page: 1000
     workers: 4
