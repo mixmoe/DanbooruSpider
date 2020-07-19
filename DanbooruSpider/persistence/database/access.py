@@ -1,4 +1,5 @@
 from functools import wraps
+from threading import Lock as threadLock
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from sqlalchemy import Table
@@ -14,6 +15,7 @@ from ...utils import SyncToAsync
 from . import models, tables
 
 DatabaseConfig = Config["persistence"]["database"]
+ThreadLock = threadLock()
 
 
 def processDatabaseAccess(func: Callable) -> Callable[..., Awaitable]:
@@ -50,9 +52,11 @@ class DatabaseAccessRoot:
 
         def __enter__(self) -> Session:
             self._session.begin()
+            ThreadLock.acquire()
             return self._session
 
         def __exit__(self, *args) -> None:
+            ThreadLock.release()
             if self._session.transaction is not None:
                 self._session.transaction.__exit__(*args)
             return

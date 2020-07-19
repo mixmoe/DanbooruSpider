@@ -39,7 +39,7 @@ spider:
     workers: 16
     retries:
       times: 3
-      delay: 5
+      delay: -1
   lists:
     proxy: *proxy
     user-agents: *user-agents

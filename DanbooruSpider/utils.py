@@ -5,6 +5,7 @@ from functools import partial, wraps
 from hashlib import md5
 from inspect import iscoroutinefunction
 from pathlib import Path
+from random import randint
 from shutil import rmtree
 from time import sleep as sleepSync
 from time import time
@@ -106,7 +107,7 @@ def Retry(
                     f"Error {e!r}{e} occurred during executing sync function "
                     + f"{func.__qualname__!r}, retring ({i}/{retries})."  # type: ignore
                 )
-            sleepSync(delay)
+            sleepSync(delay if delay > 0 else randint(0, 10))
 
     @Timing
     @wraps(func)
@@ -121,7 +122,7 @@ def Retry(
                     f"Error {e!r}{e} occurred during executing async function "
                     + f"{func.__qualname__!r}, retring ({i}/{retries})."  # type: ignore
                 )
-            await sleepAsync(delay)
+            await sleepAsync(delay if delay > 0 else randint(0, 10))
 
     return asyncWrapper if iscoroutinefunction(func) else syncWrapper
 
@@ -149,12 +150,3 @@ class HashCreator:
     @SyncToAsync
     def hexdigest(self) -> str:
         return self._hash.hexdigest()
-
-
-class AsyncTempFolder(TempFolder):
-    async def __aenter__(self) -> Path:
-        return self.__enter__()
-
-    @SyncToAsync
-    def __aexit__(self):
-        self.__exit__()

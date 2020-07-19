@@ -10,6 +10,7 @@
         "KHTML",
         "MSIE",
         "Referer",
+        "aenter",
         "aiofiles",
         "aiter",
         "asyncio",

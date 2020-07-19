@@ -1,3 +1,4 @@
+import asyncio
 from typing import List, Optional
 
 from ..exceptions import DatabaseException
@@ -36,12 +37,13 @@ class DatabaseServices:
                 }
             )
         )
-        tagsData: List[models.TagsRead] = await cls.tags.create(
+        await cls.tags.create(
             [*map(lambda x: models.TagsCreate(**{"name": x}), data.data.tags)]
         )
-        tagsRelationData: List[
-            models.TagsRelationRead
-        ] = await cls.tagsrelations.create(
+        tagsData: List[models.TagsRead] = await asyncio.gather(
+            *map(lambda x: cls.tags.read(name=x), data.data.tags)
+        )
+        await cls.tagsrelations.create(
             [
                 *map(
                     lambda x: models.TagsRelationCreate(
