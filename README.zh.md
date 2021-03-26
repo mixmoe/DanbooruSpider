@@ -44,7 +44,7 @@
 打开本项目文件夹，命令行执行
 
 ```shell
-pip insall -r requirements.txt
+pip install -r requirements.txt
 ```
 
 即可
